@@ -1,37 +1,35 @@
-//主程式連結 若有錯誤返回錯誤訊息
+function handleError(error) {
+  Logger.log(`Error: ${error.message}`);
+  SpreadsheetApp.getActiveSpreadsheet().toast(
+    `發生錯誤: ${error.message}`, 
+    "錯誤", 
+    5
+  );
+}
+
 function main(input, _calendar_id) {
   try {
-      if(input === "addEvent") {
-        // 更新行事曆
+    const calendarService = new CalendarService(_calendar_id);
+    
+    switch(input) {
+      case "addEvent":
         addEvent(_calendar_id);
-      }else if(input === "addCustomMenu") {
-        // 加入自訂選單＆＆更新行事曆
+        break;
+      case "addCustomMenu":
         addCustomMenu(_calendar_id);
-      }else if (input === "logSheetContent") {
-        // Log the content of the recordEventID sheet
+        break;
+      case "logSheetContent":
         logSheetContent();
-      }else if (input === "firstUsed") {
-        // 第一次使用 給予使用者程式碼以及提醒事項
+        break;
+      case "firstUsed":
         firstUsed();
-      }else {
-        // Log the error message
-        Logger.log("錯誤 : function not found!");
-        var ui = SpreadsheetApp.getActiveSpreadsheet().toast("程式執行錯誤，請聯絡管理員!", "錯誤", 1.5);
-      }
-  } catch(error) {
-    // Log the error message
-    Logger.log("Error message: " + error.message);
-
-    // Log the error stack trace
-    Logger.log("Error stack trace: " + error.stack);
-
-    // Optionally, extract the error line from the stack trace
-    const stackLines = error.stack.split("\n");
-    if (stackLines.length > 1) {
-      Logger.log("Error occurred at: " + stackLines[1].trim());
+        break;
+      default:
+        throw new Error("Function not found");
     }
-
-    var ui = SpreadsheetApp.getActiveSpreadsheet().toast("程式執行錯誤，請聯絡管理員!", "錯誤", 1.5);
+  } catch(error) {
+    handleError(error);
+    throw error;
   }
 }
 
@@ -64,49 +62,6 @@ function logSheetContent(){
 2. 選擇 addCustomMenu (在偵錯的右邊下拉式選單中)
 3. 點選執行        
 `);
-}
-
-// Function to parse a date range with year
-function parseDateRangeWithYear(dateRange, baseDate) {
-  // Ensure baseDate is a valid Date object
-  if (!(baseDate instanceof Date)) {
-    throw new Error("Invalid base date. Must be a Date object.");
-  }
-
-  // Normalize input by replacing multiple spaces/tabs with a single space
-  dateRange = dateRange.replace(/\s+/g, ' ').trim();
-  // Split the input into time range
-  var parts = dateRange.split(' '); // Example: "18:00-22:00"
-  var timeRange = parts[1]; // The time range part
-  var times = timeRange.split('-'); // Split into start and end times
-
-  var startTime = times[0]; // Start time, e.g., "18:00"
-  var endTime = times[1]; // End time, e.g., "22:00"
-
-  // Create new Date objects for start and end times using baseDate
-  var start = new Date(baseDate);
-  var end = new Date(baseDate);
-
-  // Set the time part
-  var startParts = startTime.split(':');
-  var endParts = endTime.split(':');
-
-  start.setHours(parseInt(startParts[0]), parseInt(startParts[1]), 0, 0); // Set hours and minutes for start
-  end.setHours(parseInt(endParts[0]), parseInt(endParts[1]), 0, 0); // Set hours and minutes for end
-
-  // Format the results
-  var formatDate = (date) => {
-    return date.getFullYear() + '/' +
-           ('0' + (date.getMonth() + 1)).slice(-2) + '/' +
-           ('0' + date.getDate()).slice(-2) + ' ' +
-           ('0' + date.getHours()).slice(-2) + ':' +
-           ('0' + date.getMinutes()).slice(-2);
-  };
-
-  return {
-    start: formatDate(start),
-    end: formatDate(end)
-  };
 }
 
 // Function to handle matching events without time
@@ -151,95 +106,21 @@ function eventIDEmpty(createTime, cal, _title, _location, _description, start_da
 
 // Function to record or update event info in "recordEventID" sheet
 function recordOrUpdateEventInfo(createTime, eventID) {
-  const sheetName = "recordEventID";
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = spreadsheet.getSheetByName(sheetName);
-
-  // Create the sheet if it doesn't exist and add headers in row 2
-  if (!sheet) {
-    sheet = spreadsheet.insertSheet(sheetName);
-    sheet.getRange("A2:B2")
-      .setValues([["Create Time", "Event ID"]])
-      .setFontWeight("bold");
-    sheet.setFrozenRows(2); // Freeze including the empty first row
-  }
-
-  // Get data starting from row 3 (after empty row and header)
-  const dataRange = sheet.getRange(3, 1, Math.max(1, sheet.getLastRow() - 2), 2);
-  const values = dataRange.getValues();
-  
-  // Create a lookup map for better performance
-  const createTimeColumn = values.map(row => row[0].toString());
-  const rowIndex = createTimeColumn.indexOf(createTime.toString());
-
-  if (rowIndex >= 0) { // Found existing entry
-    // Update only the eventID in the found row (add 3 because we start data from row 3)
-    sheet.getRange(rowIndex + 3, 2).setValue(eventID);
-    Logger.log(`Updated eventID for createTime: ${createTime}`);
-  } else {
-    // Append new row if createTime not found
-    const lastRow = Math.max(2, sheet.getLastRow());
-    sheet.getRange(lastRow + 1, 1, 1, 2).setValues([[createTime, eventID]]);
-    Logger.log(`Added new record: createTime = ${createTime}, eventID = ${eventID}`);
-  }
-
-  // Optional: Autosize columns for better readability
-  sheet.autoResizeColumns(1, 2);
+  const recordService = new RecordService();
+  return recordService.recordOrUpdateEventInfo(createTime, eventID);
 }
 
 // Function to get event ID by createTime
 function getEventIDByCreateTime(createTime) {
-  const sheetName = "recordEventID";
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = spreadsheet.getSheetByName(sheetName);
-  
-  // If sheet doesn't exist, return 0
-  if (!sheet) {
-    Logger.log(`Sheet "${sheetName}" not found`);
-    return 0;
-  }
-
-  // Get data starting from row 3 (after empty row and header)
-  const dataRange = sheet.getRange(3, 1, Math.max(1, sheet.getLastRow() - 2), 2);
-  const values = dataRange.getValues();
-  
-  // Look for matching createTime
-  const createTimeColumn = values.map(row => row[0].toString());
-  const rowIndex = createTimeColumn.indexOf(createTime.toString());
-
-  if (rowIndex >= 0) {
-    const eventID = values[rowIndex][1];
-    Logger.log(`Found eventID: ${eventID} for createTime: ${createTime}`);
-    return eventID;
-  }
-
-  Logger.log(`No eventID found for createTime: ${createTime}`);
-  return 0;
-}
-
-// Function to find a sheet with "時間戳記" in A1
-function findSheetWithTimestamp() {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  const sheets = spreadsheet.getSheets(); // Get all sheets
-
-  for (let i = 0; i < sheets.length; i++) {
-    const sheet = sheets[i];
-    const a1Value = sheet.getRange("A1").getValue(); // Get the value of A1
-
-    if (a1Value === "時間戳記") {
-      Logger.log("Sheet found: " + sheet.getName());
-      return sheet; // Return the matching sheet
-    }
-  }
-
-  Logger.log("No sheet found with '時間戳記' in A1.");
-  return null; // Return null if no sheet matches
+  const recordService = new RecordService();
+  return recordService.getEventIDByCreateTime(createTime);
 }
 
 // Function to add events to a Google Calendar
 function addEvent(_calendar_id) {
   SpreadsheetApp.getActiveSpreadsheet().toast("行事曆更新開始", "提示", 1.5);
-  const ss = findSheetWithTimestamp();
+  const recordService = new RecordService();
+  const ss = recordService.findSheetWithTimestamp();
 
   const data = ss.getRange("A1:Z" + ss.getLastRow()).getValues();
   const now = new Date();
@@ -295,7 +176,7 @@ function addEvent(_calendar_id) {
                         "借還器材地點: " + data[i][9];
     } else { // 如果是借人
       // 解析日期範圍
-      var parsedRange = parseDateRangeWithYear(data[i][11], new Date(data[i][3])); // For ranged events
+      var parsedRange = DateUtils.parseDateRangeWithYear(data[i][11], new Date(data[i][3])); // For ranged events
       start_dateTime = new Date(parsedRange.start);
       end_dateTime = new Date(parsedRange.end);
       // 詳細資訊包含借人員
@@ -356,6 +237,7 @@ function addEvent(_calendar_id) {
 
 function addCustomMenu(_calendar_id) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const recordService = new RecordService();
 
   const sheet = spreadsheet.getSheetByName("recordEventID");
   if(!sheet){
@@ -367,7 +249,7 @@ function addCustomMenu(_calendar_id) {
     Logger.log("recordEventID exist!");
   }
 
-  var ss = findSheetWithTimestamp();
+  var ss = recordService.findSheetWithTimestamp();
 
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('手打擴充功能')
@@ -434,6 +316,4 @@ function protectAndHideEventIdColumn() {
   } else {
     Logger.log("Range already protected: " + rangeToProtect.getA1Notation());
   }
-
-  //var ui = SpreadsheetApp.getActiveSpreadsheet().toast("ID 已被保護!", "提示", 3);
 }
