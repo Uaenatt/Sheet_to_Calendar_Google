@@ -6,7 +6,8 @@ var CALENDAR_CONFIG = {
   },
   COLUMN_FORMATS: {
     TEXT: '@'
-  }
+  },
+  CALENDAR_ID: "your_calendar_id_here"
 };
 
 // Google Apps Script 環境不支援 module.exports
