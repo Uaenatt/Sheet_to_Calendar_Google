@@ -29,6 +29,28 @@
 
 初次使用時請執行 `firstUsed()` 函數並按照提示操作：
 
+npm install @google/clasp -g
+clasp -v
+clasp login
+copy host URL
+new terminal
+curl URL
+
+test
+clasp push 1lBKbK-tS4O2szaFyBXXx0cAwLjY5GTEWZXBaqAWAf7e7BBqVWRiPuO_j
+
+
+online
+cd /workspaces/Sheet_to_Calendar_Google/test
+git add .
+git commit -m "Update test script"
+
+cd /workspaces/Sheet_to_Calendar_Google/online
+git pull ../test master
+clasp push
+
+
+
 1. 設定您的 Calendar ID
 2. 儲存程式碼
 3. 執行 `addCustomMenu`

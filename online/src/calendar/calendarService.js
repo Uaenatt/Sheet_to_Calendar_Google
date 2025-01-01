@@ -1,4 +1,3 @@
-
 class CalendarService {
   constructor(calendarId) {
     this.calendarId = calendarId;
