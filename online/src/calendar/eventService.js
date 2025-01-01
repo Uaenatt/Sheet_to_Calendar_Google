@@ -6,6 +6,7 @@ class EventService {
 
     addEvent() {
         var updateCorrectly = true;
+
         SpreadsheetApp.getActiveSpreadsheet().toast("行事曆更新開始", "提示", 1.5);
         const ss = this.recordService.findSheetWithTimestamp();
 
@@ -41,6 +42,7 @@ class EventService {
 
                 const _title = data[i][2]; // 活動名稱
                 const _location = data[i][4]; // 活動地點
+
                 var discription_creater_displayName = "活動單位: " + data[i][1]; // 辦理活動單位
                 var discription_createrEmailAndLineID = "名稱: " + data[i][12] +  // 聯絡人
                     "\nLine ID: " + data[i][13] + // 聯絡人 Line ID
@@ -67,7 +69,8 @@ class EventService {
                     // 解析日期範圍
                     var parsedRange = DateUtils.parseDateRangeWithYear(data[i][11], new Date(data[i][3])); // For ranged events
                     if(parsedRange === null) {
-                        ErrorHandler.handleError(new Error("Invalid date range"), data[i][2]);  // 傳遞活動名稱
+                        updateCorrectly = false;
+                        ErrorHandler.handleError(new Error("Invalid date range"), data[i][2], i, 11);  // 傳遞活動名稱
                         continue;
                     }
                     
@@ -78,20 +81,6 @@ class EventService {
                         discription_createrEmailAndLineID + '\n' +
                         "租用人員: " + data[i][10];
                 }
-
-                
-                Logger.log("now: " + now);
-                Logger.log("start_dateTime: " + start_dateTime);
-                Logger.log("end_dateTime: " + end_dateTime);
-            
-                // 如果開始時間小於現在時間加一天，則跳過
-                var start_dateTime_for_comparing = new Date(start_dateTime);
-                start_dateTime_for_comparing = start_dateTime_for_comparing.setDate(start_dateTime.getDate() + 1);
-                if (start_dateTime_for_comparing < now) {
-                    Logger.log("Skipped event: " + _title + " (past)");
-                    continue;
-                }
-
 
                 // 使用 this.recordService 來調用方法
                 const eventId = this.recordService.getEventIDByCreateTime(createTime);
@@ -141,5 +130,6 @@ class EventService {
         }else{
             ErrorHandler.overAllError();
         }
+        ErrorHandler.overAllError();
     }
 }

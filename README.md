@@ -1,4 +1,3 @@
-
 # Google Calendar 自動化工具
 
 此專案是一個 Google Apps Script 應用程式，用於自動化管理 Google Calendar 事件。
@@ -29,28 +28,6 @@
 
 初次使用時請執行 `firstUsed()` 函數並按照提示操作：
 
-npm install @google/clasp -g
-clasp -v
-clasp login
-copy host URL
-new terminal
-curl URL
-
-test
-clasp push 1lBKbK-tS4O2szaFyBXXx0cAwLjY5GTEWZXBaqAWAf7e7BBqVWRiPuO_j
-
-
-online
-cd /workspaces/Sheet_to_Calendar_Google/test
-git add .
-git commit -m "Update test script"
-
-cd /workspaces/Sheet_to_Calendar_Google/online
-git pull ../test master
-clasp push
-
-
-
 1. 設定您的 Calendar ID
 2. 儲存程式碼
 3. 執行 `addCustomMenu`
@@ -58,3 +35,51 @@ clasp push
 ## 授權
 
 此專案採用 MIT 授權條款。
+
+## 開發步驟
+
+### 環境設定
+1. 安裝 clasp CLI 工具
+```bash
+npm install @google/clasp -g
+```
+
+2. 確認 clasp 版本
+```bash
+clasp -v
+```
+
+3. 登入 Google 帳戶
+```bash
+clasp login
+```
+
+4. 複製 host URL 並在新終端機執行
+```bash
+curl <host-URL>
+```
+
+### 開發流程
+
+#### 測試環境
+
+1. 推送程式碼到測試環境
+```bash
+clasp push
+```
+
+#### 部署到線上環境
+1. 同步測試環境程式碼到線上環境
+```bash
+rsync -av --delete /workspaces/Sheet_to_Calendar_Google/test/src/ /workspaces/Sheet_to_Calendar_Google/online/src/
+```
+
+2. 推送程式碼到線上環境
+```bash
+clasp push
+```
+
+### 注意事項
+- 確保在推送前已完成所有測試
+- 保持測試環境和線上環境的 .clasp.json 設定正確
+- 每次部署前請確認程式碼變更的影響範圍

@@ -37,10 +37,17 @@ class DateUtils {
               ('0' + date.getMinutes()).slice(-2);
       };
 
-      return {
-        start: formatDate(start),
-        end: formatDate(end)
-      };
+      start = formatDate(start);
+      end = formatDate(end);
+      Logger.log(`Parsed date range: ${start} - ${end}`);
+
+      if(start.includes('NaN') || end.includes('NaN') ){
+        Logger.log("start: " + start + " end: " + end);
+        throw new Error("Invalid date range. Unable to parse date and time.");
+      }
+
+      return { start, end };
+
     } catch(e){
       return null;
     }
